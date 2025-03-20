@@ -1,0 +1,98 @@
+import 'dart:convert';
+
+import 'package:flutter/material.dart';
+import 'package:wether_api/constants.dart';
+import 'package:wether_api/home.dart';
+import 'package:http/http.dart' as http;
+import 'package:wether_api/no_city.dart';
+import 'main.dart';
+
+class weatherSearch extends SearchDelegate<String>{
+  bool foundedCity = false;
+  Future<void> fetchDataWeather(String city) async{
+    final response = await http.get(Uri.parse(defaultApiUrl+city));
+    if(response.statusCode == 200){
+      weatherData = json.decode(response.body);
+      foundedCity = true;
+    }else{
+      foundedCity = false;
+    }
+  }
+  List suggestions = [
+    "cairo",
+    "amman",
+    "beirut",
+    "dammam",
+    "jeddah",
+    "riyadh",
+    "tunis",
+    "aleppo",
+    "sanaa",
+    "doha",
+    "dubai",
+    "sydney",
+    "singapore",
+    "london",
+    "new york",
+    "tokyo",
+    "paris",
+    "mumbai",
+    "new delhi",
+  ];
+  @override
+  List<Widget>? buildActions(BuildContext context){
+    return [
+      IconButton(
+        icon: Icon(Icons.clear),
+        onPressed: () {
+          query = "";
+        },
+      ),
+    ];
+  }
+  @override
+  Widget? buildLeading(BuildContext context){
+    return IconButton(
+      icon: Icon(Icons.arrow_back),
+      onPressed: () {
+        close(context, "");
+      },
+    );
+  }
+
+  @override
+  Widget buildResults(BuildContext context){
+    query = query.toLowerCase();
+
+    return FutureBuilder(
+        future: fetchDataWeather(query),
+        builder: (context,snapshot){
+          if(snapshot.connectionState == ConnectionState.done){
+            fetchDataWeather(query);
+            foundedCity ? Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (context) => Home(city: query)), (route) => false) :
+            Navigator.of(context).push(MaterialPageRoute(builder: (context) => NoCity(city: query)),);
+            return Text("");
+          }else{
+            return Center(child: CircularProgressIndicator(color: Colors.white,),);
+          }
+        }
+    );
+
+  }
+
+  @override
+  Widget buildSuggestions(BuildContext context){
+    return ListView.builder(
+      itemCount: suggestions.length,
+      itemBuilder: (context,i){
+        return ListTile(
+          title: Text("${suggestions[i]}",style: const TextStyle(color: Colors.white),),
+          onTap: (){
+            query = suggestions[i];
+            Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (context) => Home(city: query)), (route) => false);
+          },
+        );
+      },
+    );
+  }
+}
